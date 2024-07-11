@@ -1031,7 +1031,7 @@ def getGraphicDimensions(fname):
                 width, height = struct.unpack(">ii", head[16:24])
             elif fname2.endswith(".gif"):
                 width, height = struct.unpack("<HH", head[6:10])
-            elif fname.endswidth((".jpeg", ".jpg")):
+            elif fname.endswith((".jpeg", ".jpg")):
                 try:
                     fhandle.seek(0)  # Read 0xff next
                     size = 2
@@ -2132,13 +2132,30 @@ def handleWhateverGraphicType(GraphicFilename):
                     fileExt = "eps"
                 else:
                     fileExt = None
+        elif str(type(operUrl)) == "<class 'urllib.response.addinfourl'>":
+            # data urlの場合
+            content_type = operUrl.headers.get_content_type()
+            # Set file extension based on Content-Type header_name
+            # Note: It's been translated to lower case above
+            if content_type in ["image/jpeg", "image/jpg"]:
+                # Note: only the first of these two is legitimate
+                fileExt = "jpg"
+            elif content_type == "image/png":
+                fileExt = "png"
+            elif content_type in ["image/svg+xml", "image/svg"]:
+                # Note: only the first of these two is legitimate
+                fileExt = "svg"
+            elif content_type == "application/postscript":
+                fileExt = "eps"
+            else:
+                fileExt = None
         else:
             fileExt = None
 
         # Store in a temporary file
         try:
             tempGraphicFile = tempfile.NamedTemporaryFile(
-                delete=False, suffix=fileExt, dir=tempDir
+                delete=False, suffix=f".{fileExt}", dir=tempDir
             )
         except IOError as e:
             print("Couldn't create temporary file. md2pptx terminating")
@@ -2164,7 +2181,7 @@ def handleWhateverGraphicType(GraphicFilename):
         PNGname = GraphicFilename[:-4] + ".PNG"
 
     # Process the file - whatever the origin - based on file extension
-    if ".svg" in GraphicFilename.lower():
+    if ".svg" in convertibleFilename.lower():
         # is an SVG file
         if have_cairosvg:
             # Convert SVG file to temporary PNG
